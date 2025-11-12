@@ -1,0 +1,6 @@
+pip install -r requirements.txt
+
+echo pandas>requirements.txt
+echo yfinance>>requirements.txt
+echo tqdm>>requirements.txt
+

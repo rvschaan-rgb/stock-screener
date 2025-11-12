@@ -16,9 +16,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # ======================================================================
 def load_tickers():
     try:
-        sp500 = pd.read_csv(os.path.join(BASE_DIR, "sp500_companies.csv"))["Symbol"]
-        russell = pd.read_csv(os.path.join(BASE_DIR, "iShares-Russell-2000-ETF_fund.csv"))["Symbol"]
-        nyse = pd.read_csv(os.path.join(BASE_DIR, "nyse-listed.csv"))["Symbol"]
+        sp500 = pd.read_csv(os.path.join(BASE_DIR, "data\sp500_companies.csv"))["Symbol"]
+        russell = pd.read_csv(os.path.join(BASE_DIR, "data\iShares-Russell-2000-ETF_fund.csv"))["Symbol"]
+        nyse = pd.read_csv(os.path.join(BASE_DIR, "data\nyse-listed.csv"))["Symbol"]
         tickers = pd.concat([sp500, russell, nyse]).drop_duplicates().tolist()
         return tickers
 
@@ -31,7 +31,7 @@ def load_tickers():
 # Load Sector PE file
 # ======================================================================
 def load_sector_pe():
-    sector_file = os.path.join(BASE_DIR, "SectorPE.xlsx")
+    sector_file = os.path.join(BASE_DIR, "data\SectorPE.xlsx")
     try:
         df = pd.read_excel(sector_file)
         lookup = dict(zip(df["sectorKey"].str.lower().str.replace(" ", ""), df["sectorPE"]))
@@ -49,7 +49,7 @@ def load_sector_pe():
 # ======================================================================
 # EPS Growth Filter
 # ======================================================================
-def eps_growth_3yr(symbol):
+def eps_growth_2yr(symbol):
     """
     Returns True if Diluted EPS has grown 3 years in a row.
     """
@@ -60,13 +60,13 @@ def eps_growth_3yr(symbol):
         if "Diluted EPS" not in income.index:
             return False
 
-        eps_vals = income.loc["Diluted EPS"].iloc[:3].tolist()
+        eps_vals = income.loc["Diluted EPS"].iloc[:2].tolist()
         eps_vals = [v for v in eps_vals if v is not None and not pd.isna(v)]
 
-        if len(eps_vals) < 3:
+        if len(eps_vals) < 2:
             return False
 
-        return eps_vals[2] < eps_vals[1] < eps_vals[0]
+        return eps_vals[1] < eps_vals[0]
 
     except Exception:
         return False
@@ -99,19 +99,19 @@ def screen_stocks(tickers, sector_pe_lookup):
                 continue
 
             # ✅ Filter 1 — PE
-            if stock_pe < sector_avg_pe:
+            if stock_pe <= 1.05 * sector_avg_pe:
                 f1 += 1
             else:
                 continue
 
             # ✅ Filter 2 — Debt / Equity
-            if debt_to_equity is not None and debt_to_equity < 2.0:
+            if debt_to_equity is not None and debt_to_equity < 4.0:
                 f2 += 1
             else:
                 continue
 
             # ✅ Filter 3 — EPS Growth
-            if eps_growth_3yr(symbol):
+            if eps_growth_2yr(symbol):
                 f3 += 1
             else:
                 continue
@@ -124,7 +124,7 @@ def screen_stocks(tickers, sector_pe_lookup):
             avg_10day_volume = hist["Volume"].tail(11).iloc[:-1].mean()
             today_volume = hist["Volume"].iloc[-1]
 
-            if today_volume > avg_10day_volume:
+            if today_volume >= 0.90 * avg_10day_volume:
                 f4 += 1
             else:
                 continue
@@ -133,7 +133,7 @@ def screen_stocks(tickers, sector_pe_lookup):
             high_20 = hist["High"].tail(20).max()
             sma_50 = hist["Close"].rolling(window=50).mean().iloc[-1]
 
-            if current_price >= high_20 and current_price >= sma_50:
+            if current_price >= 0.90 * high_20 and current_price >= sma_50:
                 f5 += 1
             else:
                 continue
@@ -150,7 +150,7 @@ def screen_stocks(tickers, sector_pe_lookup):
                 "Price": current_price,
                 "20-Day High": high_20,
                 "SMA50": sma_50,
-                "3-Year EPS Growth": "Yes",
+                "2-Year EPS Growth": "Yes",
             })
 
         except Exception:
@@ -184,7 +184,7 @@ if __name__ == "__main__":
     # Export results
     df = pd.DataFrame(results)
     timestamp = datetime.now().strftime("%m-%d-%y %H-%M")
-    filename = os.path.join(BASE_DIR, f"Immediate_Actin_Results_{timestamp}.xlsx")
+    filename = os.path.join(BASE_DIR, f"outputs\Watch_Screen_Results_{timestamp}.xlsx")
     df.to_excel(filename, index=False)
 
     print(f"✨ Done! Final screened stock count: {len(df)}")
