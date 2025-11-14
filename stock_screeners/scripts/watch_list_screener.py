@@ -1,4 +1,16 @@
-# My Stock Screener
+# watch_list_screeener
+
+"""
+===============================================================================
+Project Naming Conventions Reminder
+===============================================================================
+- All files and directories: lowercase with underscores (snake_case)
+- Data files: nouns (e.g., sp500_companies.csv, sector_pe.xlsx)
+- Scripts: verbs or action-oriented (e.g., watch_list_screener.py)
+- Folders: plural (e.g., scripts/, data/, outputs/)
+- Purpose: Maintain consistency, readability, and cross-platform compatibility
+===============================================================================
+"""
 
 import pandas as pd
 import yfinance as yf
