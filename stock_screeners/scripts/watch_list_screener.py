@@ -2,23 +2,76 @@
 
 import pandas as pd
 import yfinance as yf
-import os
+import importlib.util
+from pathlib import Path
 from datetime import datetime
 from tqdm import tqdm
 
 # ======================================================================
-# Dynamically get the folder where THIS script is located
+# Environment Validation (auto-check)
 # ======================================================================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def verify_environment():
+    base_dir = Path(__file__).resolve().parent
+    data_dir = base_dir.parent / "data"
+    output_dir = base_dir.parent / "outputs"
+
+    required_files = [
+        data_dir / "sp500.csv",
+        data_dir / "russell_2000_etf.csv",
+        data_dir / "nyse.csv",
+        data_dir / "sector_pe.xlsx",
+    ]
+
+    required_libs = ["pandas", "yfinance", "tqdm", "openpyxl"]
+
+    print("=" * 60)
+    print("🔧 ENVIRONMENT CHECK")
+    print("=" * 60)
+
+    # --- Check files and folders ---
+    for f in required_files:
+        if not f.exists():
+            raise FileNotFoundError(f"❌ Missing required file: {f}")
+        else:
+            print(f"✅ Found: {f.name}")
+
+    if not output_dir.exists():
+        print(f"⚠️ Output folder missing, creating: {output_dir}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- Check library dependencies ---
+    for lib in required_libs:
+        if importlib.util.find_spec(lib) is None:
+            raise ImportError(f"❌ Missing Python library: {lib}")
+        else:
+            print(f"✅ Library OK: {lib}")
+
+    print("=" * 60)
+    print("🎯 Environment OK — proceeding.\n")
+
+# Run environment verification
+verify_environment()
+
+# ======================================================================
+# Define paths dynamically
+# ======================================================================
+BASE_DIR = Path(__file__).resolve().parent  # /scripts
+DATA_DIR = BASE_DIR.parent / "data"
+OUTPUT_DIR = BASE_DIR.parent / "outputs"
+
+# Ensure output folder exists
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ======================================================================
 # Load Ticker Symbols
 # ======================================================================
 def load_tickers():
     try:
-        sp500 = pd.read_csv(os.path.join(BASE_DIR, "data\sp500_companies.csv"))["Symbol"]
-        russell = pd.read_csv(os.path.join(BASE_DIR, "data\iShares-Russell-2000-ETF_fund.csv"))["Symbol"]
-        nyse = pd.read_csv(os.path.join(BASE_DIR, "data\nyse-listed.csv"))["Symbol"]
+        sp500 = pd.read_csv(DATA_DIR / "sp500.csv")["Symbol"]
+        russell = pd.read_csv(DATA_DIR / "russell_2000_etf.csv")["Symbol"]
+        nyse = pd.read_csv(DATA_DIR / "nyse.csv")["Symbol"]
+
         tickers = pd.concat([sp500, russell, nyse]).drop_duplicates().tolist()
         return tickers
 
@@ -31,7 +84,7 @@ def load_tickers():
 # Load Sector PE file
 # ======================================================================
 def load_sector_pe():
-    sector_file = os.path.join(BASE_DIR, "data\SectorPE.xlsx")
+    sector_file = DATA_DIR / "sector_pe.xlsx"
     try:
         df = pd.read_excel(sector_file)
         lookup = dict(zip(df["sectorKey"].str.lower().str.replace(" ", ""), df["sectorPE"]))
@@ -39,11 +92,11 @@ def load_sector_pe():
         return lookup
 
     except PermissionError:
-        print("\n⚠️ ERROR: Close SectorPE.xlsx first.")
+        print("\n⚠️ ERROR: Close sector_pe.xlsx first.")
         raise
 
     except FileNotFoundError:
-        print("\n❌ ERROR: Could not find SectorPE.xlsx.")
+        print("\n❌ ERROR: Could not find sector_pe.xlsx.")
         raise
 
 # ======================================================================
@@ -51,7 +104,7 @@ def load_sector_pe():
 # ======================================================================
 def eps_growth_2yr(symbol):
     """
-    Returns True if Diluted EPS has grown 3 years in a row.
+    Returns True if Diluted EPS has grown 2 years in a row.
     """
     try:
         ticker = yf.Ticker(symbol)
@@ -99,7 +152,7 @@ def screen_stocks(tickers, sector_pe_lookup):
                 continue
 
             # ✅ Filter 1 — PE
-            if stock_pe <= 1.05 * sector_avg_pe:
+            if stock_pe <= (1.05 * int(sector_avg_pe)):
                 f1 += 1
             else:
                 continue
@@ -124,7 +177,7 @@ def screen_stocks(tickers, sector_pe_lookup):
             avg_10day_volume = hist["Volume"].tail(11).iloc[:-1].mean()
             today_volume = hist["Volume"].iloc[-1]
 
-            if today_volume >= 0.90 * avg_10day_volume:
+            if today_volume >= (0.90 * int(avg_10day_volume)):
                 f4 += 1
             else:
                 continue
@@ -133,7 +186,7 @@ def screen_stocks(tickers, sector_pe_lookup):
             high_20 = hist["High"].tail(20).max()
             sma_50 = hist["Close"].rolling(window=50).mean().iloc[-1]
 
-            if current_price >= 0.90 * high_20 and current_price >= sma_50:
+            if current_price >= (0.90 * int(high_20)) and current_price >= sma_50:
                 f5 += 1
             else:
                 continue
@@ -156,7 +209,8 @@ def screen_stocks(tickers, sector_pe_lookup):
         except Exception:
             continue
 
-    # ✅ Print final diagnostic summary
+# ✅ Print final diagnostic summary
+
     print("\n================ Filter Diagnostics ================")
     print(f"Passed PE filter:          {f1}")
     print(f"Passed Debt/Equity filter: {f2}")
@@ -165,15 +219,12 @@ def screen_stocks(tickers, sector_pe_lookup):
     print(f"Passed Price breakout:     {f5}")
     print("====================================================\n")
 
-    
-
     return results
-    
+
 # ======================================================================
 # Main Execution
 # ======================================================================
-if __name__ == "__main__":
-
+def main():
     tickers = load_tickers()
     print(f"✅ Total tickers loaded: {len(tickers)}")
 
@@ -183,9 +234,13 @@ if __name__ == "__main__":
 
     # Export results
     df = pd.DataFrame(results)
-    timestamp = datetime.now().strftime("%m-%d-%y %H-%M")
-    filename = os.path.join(BASE_DIR, f"outputs\Watch_Screen_Results_{timestamp}.xlsx")
+    timestamp = datetime.now().strftime("%m-%d-%y_%H-%M")
+    filename = OUTPUT_DIR / f"watch_screen_results_{timestamp}.xlsx"
     df.to_excel(filename, index=False)
 
     print(f"✨ Done! Final screened stock count: {len(df)}")
     print(f"📁 Exported results to: {filename}")
+
+if __name__ == "__main__":
+    verify_environment()
+    main()

@@ -7,6 +7,54 @@ from datetime import datetime
 from tqdm import tqdm
 
 # ======================================================================
+# Environment Validation (auto-check)
+# ======================================================================
+import importlib.util
+from pathlib import Path
+
+def verify_environment():
+    base_dir = Path(__file__).resolve().parent
+    data_dir = base_dir.parent / "data"
+    output_dir = base_dir.parent / "outputs"
+
+    required_files = [
+        data_dir / "sp500_companies.csv",
+        data_dir / "iShares-Russell-2000-ETF_fund.csv",
+        data_dir / "nyse-listed.csv",
+        data_dir / "SectorPE.xlsx",
+    ]
+
+    required_libs = ["pandas", "yfinance", "tqdm", "openpyxl"]
+
+    print("=" * 60)
+    print("🔧 ENVIRONMENT CHECK")
+    print("=" * 60)
+
+    # --- Check files and folders ---
+    for f in required_files:
+        if not f.exists():
+            raise FileNotFoundError(f"❌ Missing required file: {f}")
+        else:
+            print(f"✅ Found: {f.name}")
+
+    if not output_dir.exists():
+        print(f"⚠️ Output folder missing, creating: {output_dir}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- Check library dependencies ---
+    for lib in required_libs:
+        if importlib.util.find_spec(lib) is None:
+            raise ImportError(f"❌ Missing Python library: {lib}")
+        else:
+            print(f"✅ Library OK: {lib}")
+
+    print("=" * 60)
+    print("🎯 Environment OK — proceeding.\n")
+
+# Run environment verification
+verify_environment()
+
+# ======================================================================
 # Dynamically get the folder where THIS script is located
 # ======================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
