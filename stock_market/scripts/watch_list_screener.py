@@ -164,7 +164,7 @@ def screen_stocks(tickers, sector_pe_lookup):
                 continue
 
             # ✅ Filter 1 — PE
-            if stock_pe <= (1.05 * int(sector_avg_pe)):
+            if stock_pe <= (1.05 * sector_avg_pe):
                 f1 += 1
             else:
                 continue
@@ -189,7 +189,7 @@ def screen_stocks(tickers, sector_pe_lookup):
             avg_10day_volume = hist["Volume"].tail(11).iloc[:-1].mean()
             today_volume = hist["Volume"].iloc[-1]
 
-            if today_volume >= (0.90 * int(avg_10day_volume)):
+            if today_volume >= (0.90 * avg_10day_volume):
                 f4 += 1
             else:
                 continue
@@ -198,7 +198,7 @@ def screen_stocks(tickers, sector_pe_lookup):
             high_20 = hist["High"].tail(20).max()
             sma_50 = hist["Close"].rolling(window=50).mean().iloc[-1]
 
-            if current_price >= (0.90 * int(high_20)) and current_price >= sma_50:
+            if current_price >= (0.90 * high_20) and current_price >= sma_50:
                 f5 += 1
             else:
                 continue
