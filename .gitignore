@@ -1,0 +1,29 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.env/
+venv/
+env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and folders
+*.log
+outputs/
+_practice/
+data/
+
+# IDE / Editor files
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Specific file types
+*.json
