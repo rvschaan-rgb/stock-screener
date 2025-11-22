@@ -1,4 +1,4 @@
-# watch_list_screeener
+# watch_list_screener
 
 """
 ===============================================================================
@@ -18,6 +18,52 @@ import importlib.util
 from pathlib import Path
 from datetime import datetime
 from tqdm import tqdm
+
+# ====================================
+# Universal Sector Normalization Map
+# ====================================
+
+SECTOR_MAP = {
+    # Technology
+    "Information Technology": "technology",
+	"Technology": "technology",
+
+    # Communication Services
+    "Communication": "communication_services",
+	"Communication Services": "communication_services",
+
+    # Consumer Cyclical / Discretionary
+    "Consumer Discretionary": "consumer_cyclical",
+	"Consumer Cyclical": "consumer_cyclical",
+
+    # Consumer Defensive
+    "Consumer Staples": "consumer_defensive",
+	"Consumer Defensive": "consumer_defensive",
+
+    # Financial Services
+    "Financials": "financial_services",
+	"Financial Services": "financial_services",
+
+    # Healthcare
+    "Health Care": "healthcare",
+	"Healthcare": "healthcare",
+
+    # Industrials
+    "Industrials": "industrials",
+
+    # Energy
+    "Energy": "energy",
+
+    # Utilities
+    "Utilities": "utilities",
+
+    # Real Estate
+    "Real Estate": "real_estate",
+
+    # Basic Materials
+    "Materials": "basic_materials",
+	"Basic Materials": "basic_materials",
+}
 
 # ======================================================================
 # Environment Validation (auto-check)
@@ -61,9 +107,6 @@ def verify_environment():
 
     print("=" * 60)
     print("🎯 Environment OK — proceeding.\n")
-
-# Run environment verification
-verify_environment()
 
 # ======================================================================
 # Define paths dynamically
@@ -117,6 +160,7 @@ def load_sector_pe():
 def eps_growth_2yr(symbol):
     """
     Returns True if Diluted EPS has grown 2 years in a row.
+    
     """
     try:
         ticker = yf.Ticker(symbol)
@@ -135,6 +179,22 @@ def eps_growth_2yr(symbol):
 
     except Exception:
         return False
+
+# =======================
+# Normalization Function
+# =======================
+
+def normalize_sector(name: str) -> str:
+    if not name:
+        return None
+
+    cleaned = name.lower().strip().replace("-", " ")
+
+    # Lookup normalized version
+    normalized = SECTOR_MAP.get(cleaned, cleaned)
+
+    # Spaces → underscore
+    return normalized.replace(" ", "_")
 
 # ======================================================================
 # Screening Function
@@ -164,7 +224,7 @@ def screen_stocks(tickers, sector_pe_lookup):
                 continue
 
             # ✅ Filter 1 — PE
-            if stock_pe <= (1.05 * sector_avg_pe):
+            if stock_pe <= (1.25 * sector_avg_pe):
                 f1 += 1
             else:
                 continue
@@ -198,7 +258,7 @@ def screen_stocks(tickers, sector_pe_lookup):
             high_20 = hist["High"].tail(20).max()
             sma_50 = hist["Close"].rolling(window=50).mean().iloc[-1]
 
-            if current_price >= (0.90 * high_20) and current_price >= sma_50:
+            if current_price >= (0.85 * high_20) and current_price >= sma_50:
                 f5 += 1
             else:
                 continue
@@ -253,6 +313,4 @@ def main():
     print(f"✨ Done! Final screened stock count: {len(df)}")
     print(f"📁 Exported results to: {filename}")
 
-if __name__ == "__main__":
-    verify_environment()
-    main()
+main()

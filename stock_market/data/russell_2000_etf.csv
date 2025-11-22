@@ -1,4 +1,4 @@
-﻿Symbol,Name,Sector,Asset Class,Market Value,Weight (%),Notional Value,Quantity,Price,Location,Exchange,Currency,FX Rate,Accrual Date
+﻿Symbol,Name,sectorKey,Asset Class,Market Value,Weight (%),Notional Value,Quantity,Price,Location,Exchange,Currency,FX Rate,Accrual Date
 BE,BLOOM ENERGY CLASS A CORP,Industrials,Equity,"710,316,675.42",1.05,"710,316,675.42","5,190,097.00",136.86,United States,New York Stock Exchange Inc.,USD,1,--
 CRDO,CREDO TECHNOLOGY GROUP HOLDING LTD,Information Technology,Equity,"582,784,959.20",0.86,"582,784,959.20","3,581,080.00",162.74,United States,NASDAQ,USD,1,--
 FN,FABRINET,Information Technology,Equity,"403,118,686.36",0.59,"403,118,686.36","873,989.00",461.24,United States,New York Stock Exchange Inc.,USD,1,--

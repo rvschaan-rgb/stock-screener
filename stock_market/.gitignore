@@ -17,8 +17,13 @@ Thumbs.db
 # Logs and output
 *.log
 outputs/
+_practice/
+data/
 
 # IDE / Editor files
 .vscode/
 *.sublime-project
 *.sublime-workspace
+
+#Specific file types
+*.json
